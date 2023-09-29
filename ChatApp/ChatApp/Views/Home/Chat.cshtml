@@ -57,12 +57,12 @@
                         if (but.value == 'join') {
                             but.value = 'leave';
                             roomName = groupName;
-                            connection.invoke('joinroom', groupName);
+                            connection.invoke('joinroom', groupName, name);
                         }
                         else{
                             but.value = 'join';
                             roomName = '';
-                            connection.invoke('leaveroom', groupName);
+                            connection.invoke('leaveroom', groupName, name);
                         }
                         
                     });
@@ -77,7 +77,7 @@
 
                 connection.on("Notify", function (message) {
                     var liElement = document.createElement('li');
-                    liElement.innerHTML = '<strong>' + name + '</strong>:&nbsp;&nbsp;' + message;
+                    liElement.innerHTML = '<strong>' + message;
                     document.getElementById('discussion').appendChild(liElement);
                 });
                
