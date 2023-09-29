@@ -1,0 +1,89 @@
+﻿@{
+    ViewData["Title"] = "Chat";
+}
+
+@model Tuple<string, List<string>>
+
+<div class="container m-auto row g-0 min-vh-100">
+    <div class="col-3 d-flex flex-column text-center justify-content-center align-content-center">
+        @foreach (var item in Model.Item2)
+        {
+            <button type="button" id="@item"
+               class="btn m-1 p-3 fs-5 border-0 bg-primary bg-primary bg-opacity-10 text-black text-decoration-none rounded-3" value="join">
+               @item</button>
+        }
+    </div>
+    <div class="col d-flex flex-column g-0 ms-3 justify-content-end align-content-end">
+        <ul id="discussion" class="p-1 m-3"></ul>
+        <div class="justify-content-end align-content-end row p-3">
+            <input type="text" id="message" class="form-control-lg w-75" />
+            <input type="button" id="sendmessage" value="Send" class="btn btn-outline-success btn-lg w-25 border-0" />
+        </div>
+</div>
+
+</div>
+<script src="~/js/signalr/dist/browser/signalr.js"></script>
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+
+        var messageInput = document.getElementById('message');
+        const name = '@Model.Item1.ToString()';
+        var roomName;
+        messageInput.focus();
+
+        var connection = new signalR.HubConnectionBuilder()
+            .withUrl('/chat')
+            .build();
+
+        connection.on('broadcastMessage', function (name, message) {
+            var encodedName = name;
+            var encodedMsg = message;
+
+            var liElement = document.createElement('li');
+            liElement.innerHTML = '<strong>' + encodedName + '</strong>:&nbsp;&nbsp;' + encodedMsg;
+            document.getElementById('discussion').appendChild(liElement);
+        });
+
+        connection.start()
+            .then(function () {
+                console.log('connection started');
+
+                const el = @Html.Raw(Json.Serialize(Model.Item2));
+
+                el.forEach((groupName) => {
+                    var but = document.getElementById(groupName);
+                    
+                    but.addEventListener('click', function (event) {
+                        if (but.value == 'join') {
+                            but.value = 'leave';
+                            roomName = groupName;
+                            connection.invoke('joinroom', groupName);
+                        }
+                        else{
+                            but.value = 'join';
+                            roomName = '';
+                            connection.invoke('leaveroom', groupName);
+                        }
+                        
+                    });
+                });
+                document.getElementById('sendmessage').addEventListener('click', function (event) {
+                    connection.invoke('send', name, messageInput.value, roomName);
+
+                    messageInput.value = '';
+                    messageInput.focus();
+                    event.preventDefault();
+                });
+
+                connection.on("Notify", function (message) {
+                    var liElement = document.createElement('li');
+                    liElement.innerHTML = '<strong>' + name + '</strong>:&nbsp;&nbsp;' + message;
+                    document.getElementById('discussion').appendChild(liElement);
+                });
+               
+            })
+            .catch(error => {
+                console.error(error.message);
+            });
+    });
+</script>
